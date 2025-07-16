@@ -1,0 +1,151 @@
+---
+alwaysApply: true
+---
+Staydesk NLP & Email Intelligence Developer Task
+
+Project: Staydesk – automated email reading, understanding, and reply system
+Role: NLP & Email Intelligence Developer
+LLM: Google Gemini 2.5 (via Vertex AI Agents)
+
+1. Objective
+
+Design and implement the email intelligence layer that: 1) fetches and preprocesses incoming client emails; 2) analyzes intent and extracts structured parameters; 3) formulates queries to the availability API; 4) handles edge cases and confidence thresholds; 5) returns a standardized payload for the reply engine.
+
+2. Tech Stack & Framework Decision
+
+Primary LLM Integration: Google Gemini 2.5 via Vertex AI Agents (recommended)
+
+Rationale: direct support for Gemini models, built‑in tool orchestration, tight Google Cloud integration, managed scaling and security.
+
+Fallback / Hybrid: LangChain with VertexAI wrapper for Python if open‑source chaining or custom prompt flows are preferred.
+
+Language & Libraries: Python 3.11+, google-cloud-aiplatform, protobuf, fastapi, pydantic, email (stdlib), regex, pytest.
+
+3. High‑Level Responsibilities
+
+Email Ingestion & Preprocessing
+
+Connect to the IMAP mailbox (MailHog during dev, real SMTP/IMAP in staging).
+
+Normalize encoding, strip HTML to plaintext, remove signatures and quotes.
+
+Intent Classification
+
+Build a classifier using Gemini 2.5 to detect: availability_request, generic_query, or ignore.
+
+Implement a confidence threshold (e.g., ≥85%) for automatic classification; below threshold, mark for clarification.
+
+Parameter Extraction
+
+Define the schema: date, room_count, budget, view_preference, special_requests.
+
+Use hybrid approach: regex extraction for dates/numericals + Gemini fallback for free‑form text.
+
+Prompt Construction & Agent Chaining
+
+If using Google Agents:
+
+Register two tools: extract_params_tool, intent_tool.
+
+Configure agent with step‑by‑step planning: detect intent → extract params → validate.
+
+If using LangChain:
+
+Create a VertexAITool for each function, wire into an AgentExecutor.
+
+Edge Case Handling
+
+Missing critical fields: generate a clarification prompt template.
+
+Multiple room queries: extract all, rank by availability API suggestions.
+
+Irrelevant content: return ignore with fallback generic reply.
+
+Output Payload
+
+Return JSON:
+
+{
+  "intent": "availability_request",  
+  "params": {"date": "2025-08-01", "room_count": 2, "budget": 150},
+  "confidence": 0.92,
+  "next_action": "call_availability_api"
+}
+
+4. Detailed Implementation Steps
+
+Phase
+
+Tasks
+
+Deliverables
+
+Notes
+
+1. Setup & Prototyping
+
+Configure Vertex AI SDK, set up service account with appropriate IAM roles.
+
+Write sandbox script to invoke Gemini 2.5 for simple classification.
+| npl_prototype.py | Verify API quotas and latency. |
+| 2. Email Ingestion Module |
+
+Implement EmailFetcher (IMAP client) and EmailCleaner (strip HTML/signatures).
+
+Unit tests with sample .eml files.
+| email_parser.py, test_email_parser.py | Ensure 100% coverage on parsing key fields. |
+| 3. Intent Classifier |
+
+Create IntentClassifier class wrapping Gemini 2.5 calls.
+
+Define prompt templates & safety guardrails.
+| intent_classifier.py | Include confidence threshold logic. |
+| 4. Parameter Extraction |
+
+Build ParamExtractor using regex for dates (dateparser), numbers, and call LLM for free text.
+
+Validate outputs against Pydantic schema.
+| room_request_extractor.py | Test with 50 varied email samples. |
+| 5. Agent Workflow |
+
+Using Vertex AI Agents: register tools in AgentConfig, define execution flow.
+
+Or, instantiate LangChain’s Tool objects, set up AgentExecutor.
+| agent_workflow.py | Simulate full-process end-to-end. |
+| 6. Edge Cases & Clarifications |
+
+Build templates for clarification prompts.
+
+Create fallback logic for multi-room queries (e.g. return top 5 rooms).
+| edge_cases.py | Document all edge-case scenarios. |
+| 7. Integration & Documentation |
+
+Integrate with backend API stubs (/api/availability, /api/rooms/context).
+
+Write developer guide: NLP_README.md with setup, environment variables, testing instructions.
+| NLP_README.md | Peer‑reviewed and merged into main. |
+
+5. Acceptance Criteria
+
+Parsing Accuracy: ≥95% on date and numeric extraction in a 50-sample test suite.
+
+Classification Confidence: ≥90% true-positive rate for availability requests.
+
+Response Time: Single email → structured JSON in ≤300ms (average).
+
+Error Handling: Missing/ambiguous data triggers a clear clarification prompt.
+
+Code Quality: PEP8 compliant, 80%+ unit test coverage, documented public interfaces.
+
+6. Timeline
+
+Week 1: Prototype LLM integration, email ingestion module.
+
+Week 2: Build and test intent classifier & parameter extractor.
+
+Week 3: Implement agent workflow, edge-case handling, integration.
+
+Week 4: Final testing, performance tuning, documentation handoff.
+
+Ready to start? Confirm you have access to the Google Cloud project, service account credentials, and sample emails to begin Phase 1.
+

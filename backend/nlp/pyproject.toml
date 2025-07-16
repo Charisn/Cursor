@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "staydesk-nlp"
+version = "1.0.0"
+description = "Email intelligence layer for Staydesk"
+requires-python = ">=3.13"
+dependencies = [
+    "google-cloud-aiplatform>=1.38.0",
+    "google-cloud-core>=2.4.1",
+    "protobuf>=4.25.0",
+    "email-validator>=2.1.0",
+    "beautifulsoup4>=4.12.0",
+    "html2text>=2020.1.16",
+    "dateparser>=1.2.0",
+    "regex>=2023.10.3",
+    "pydantic>=2.5.0",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "structlog>=23.2.0",
+    "python-dotenv>=1.0.0",
+    "imapclient>=2.3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.6.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py313']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true 
