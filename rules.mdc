@@ -1,0 +1,37 @@
+---
+alwaysApply: True
+---
+This is web app called Staydesk.
+The goal of this project is to read e-mails from our clients, understand what they need and reply to them.
+
+For now we mostly need 2 use cases.
+Case 1:
+Reply to the user with room availability at the date they replied.
+
+Case 2:
+Reply to the user with a generic response that we will reply to them promptly
+
+If the client wants something different than room availability check we reply with case 2.
+
+If the client asks for availability or information about rooms and or view and or whatever then we have an API that returns to the AI the information about the room the client wants.
+
+The AI will have to request our API with the parameters it expects, that were extracted from the clients unstructured e-mail.
+Then, the API will give the LLM the context it needs to reply to the client.
+
+We need to cover all edge cases like:
+1. When user requests with not enough data ( We have to ask)
+2. When the user wants information for 3-4 roosm ( We need the API to return the 5 best rooms close to his budget or available at that date)
+3. When the user asks for something random we need to completely skip his request.
+4. etc.. All edge cases.
+
+Tech stack:
+
+Front end:
+React
+
+Backend:
+Python
+
+Mail Service:
+Mailhog
+
