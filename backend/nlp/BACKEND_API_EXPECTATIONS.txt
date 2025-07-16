@@ -1,0 +1,209 @@
+STAYDESK NLP - BACKEND API EXPECTATIONS
+=====================================
+
+This document outlines what the NLP service expects from the backend API to function properly.
+
+## Overview
+
+The NLP service processes emails and extracts room availability requests. When it identifies a valid availability request with sufficient parameters, it needs to call the backend API to get room availability data and pricing information.
+
+## Required API Endpoints
+
+### 1. Room Availability Endpoint
+
+**Endpoint:** `POST /api/availability`
+
+**Purpose:** Get available rooms based on customer requirements
+
+**Request Format:**
+```json
+{
+    "check_in_date": "2025-08-15",
+    "room_count": 2,
+    "max_budget": 150.00,
+    "view_preference": "ocean"
+}
+```
+
+**Request Fields:**
+- `check_in_date` (required): ISO date format (YYYY-MM-DD)
+- `room_count` (required): Integer between 1-10
+- `max_budget` (optional): Maximum budget per room per night in USD
+- `view_preference` (optional): String describing preferred view type
+
+**Expected Response Format:**
+```json
+{
+    "available_rooms": [
+        {
+            "room_id": "101",
+            "room_type": "Ocean View Suite",
+            "price_per_night": 120.00,
+            "view_type": "ocean",
+            "amenities": ["WiFi", "Air Conditioning", "Mini Bar"],
+            "availability_date": "2025-08-15",
+            "description": "Spacious suite with panoramic ocean views"
+        },
+        {
+            "room_id": "205",
+            "room_type": "City View Standard",
+            "price_per_night": 95.00,
+            "view_type": "city",
+            "amenities": ["WiFi", "Air Conditioning"],
+            "availability_date": "2025-08-15",
+            "description": "Comfortable room with city skyline views"
+        }
+    ],
+    "total_count": 8,
+    "suggested_alternatives": [
+        {
+            "check_in_date": "2025-08-16",
+            "available_rooms": 12,
+            "message": "More rooms available the next day"
+        }
+    ],
+    "message": "Found 8 available rooms matching your criteria"
+}
+```
+
+**Response Fields:**
+- `available_rooms`: Array of available room objects (max 10 returned)
+- `total_count`: Total number of available rooms
+- `suggested_alternatives`: Alternative dates/options if limited availability
+- `message`: Optional message about the availability
+
+### 2. Room Context Endpoint (Optional but Recommended)
+
+**Endpoint:** `GET /api/rooms/context`
+
+**Purpose:** Get general information about the hotel for better responses
+
+**Expected Response Format:**
+```json
+{
+    "hotel_name": "Staydesk Resort",
+    "location": "Miami Beach, FL",
+    "amenities": ["Pool", "Spa", "Restaurant", "Gym", "Beach Access"],
+    "room_types": [
+        {
+            "type": "Standard Room",
+            "base_price_range": [80, 120],
+            "capacity": 2
+        },
+        {
+            "type": "Ocean View Suite",
+            "base_price_range": [150, 250],
+            "capacity": 4
+        }
+    ],
+    "policies": {
+        "check_in_time": "15:00",
+        "check_out_time": "11:00",
+        "cancellation_policy": "Free cancellation up to 24 hours before check-in"
+    }
+}
+```
+
+## API Integration Requirements
+
+### Authentication
+- The NLP service will send requests with appropriate authentication headers
+- Environment variable: `BACKEND_API_BASE_URL` should point to your API base URL
+- Example: `http://backend-api:8000/api`
+
+### Error Handling
+The API should return proper HTTP status codes and error messages:
+
+**400 Bad Request:**
+```json
+{
+    "error": "Invalid request",
+    "details": "check_in_date must be in future"
+}
+```
+
+**404 Not Found:**
+```json
+{
+    "error": "No availability",
+    "details": "No rooms available for the specified criteria"
+}
+```
+
+**500 Internal Server Error:**
+```json
+{
+    "error": "Server error",
+    "details": "Database connection failed"
+}
+```
+
+### Response Time Expectations
+- Availability API should respond within 5 seconds
+- Context API should respond within 2 seconds
+- NLP service has a 30-second timeout (configurable)
+
+## Data Flow Example
+
+1. Customer sends email: "I need 2 rooms for August 15th with ocean view, budget around $150"
+
+2. NLP processes email and extracts:
+   - Date: 2025-08-15
+   - Room count: 2
+   - Budget: 150
+   - View preference: ocean
+
+3. NLP calls your API:
+   ```
+   POST /api/availability
+   {
+       "check_in_date": "2025-08-15",
+       "room_count": 2,
+       "max_budget": 150.00,
+       "view_preference": "ocean"
+   }
+   ```
+
+4. Your API returns available rooms
+
+5. NLP generates response email with room options
+
+## Edge Cases to Handle
+
+### Multiple Room Requests
+- When `room_count` > 1, return rooms that can accommodate the group
+- Consider returning room combinations if single rooms aren't available
+- Provide group booking discounts if applicable
+
+### Budget Considerations
+- If `max_budget` is provided, only return rooms within that range
+- If no rooms within budget, suggest closest alternatives
+- Include any applicable taxes/fees in pricing
+
+### No Availability
+- When no rooms are available, return `available_rooms: []`
+- Provide `suggested_alternatives` with nearby dates
+- Include helpful message about peak seasons or alternative options
+
+### High Volume Requests
+- For `room_count` > 5, consider special group rates
+- May require manual review for very large bookings (>10 rooms)
+
+## Configuration
+Set these environment variables for NLP service:
+- `BACKEND_API_BASE_URL`: Your API base URL
+- `API_TIMEOUT`: Request timeout in seconds (default: 30)
+
+## Testing
+The NLP service provides a test endpoint at `/process-email` where you can send sample emails to test the integration.
+
+Example test request:
+```json
+{
+    "subject": "Room Availability Inquiry",
+    "body": "Hi, I need 1 room for December 25th, budget around $200",
+    "sender": "test@example.com"
+}
+```
+
+This will trigger the full NLP pipeline and call your availability API if the request is valid. 

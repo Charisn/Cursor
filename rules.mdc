@@ -25,6 +25,7 @@ We need to cover all edge cases like:
 4. etc.. All edge cases.
 
 Tech stack:
+Build on docker
 
 Front end:
 React

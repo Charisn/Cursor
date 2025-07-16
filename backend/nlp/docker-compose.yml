@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  nlp-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: staydesk-nlp
+    ports:
+      - "8001:8001"
+    environment:
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+      - VERTEX_AI_LOCATION=${VERTEX_AI_LOCATION:-us-central1}
+      - IMAP_SERVER=${IMAP_SERVER:-mailhog}
+      - IMAP_PORT=${IMAP_PORT:-1025}
+      - IMAP_USERNAME=${IMAP_USERNAME}
+      - IMAP_PASSWORD=${IMAP_PASSWORD}
+      - IMAP_USE_TLS=${IMAP_USE_TLS:-false}
+      - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD:-0.85}
+      - MAX_PROCESSING_TIME=${MAX_PROCESSING_TIME:-300}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
+      - BACKEND_API_BASE_URL=${BACKEND_API_BASE_URL:-http://backend-api:8000/api}
+      - API_TIMEOUT=${API_TIMEOUT:-30}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+    volumes:
+      - ./credentials:/app/credentials:ro
+      - ./logs:/app/logs
+    networks:
+      - staydesk-network
+    depends_on:
+      - mailhog
+    restart: unless-stopped
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: staydesk-mailhog
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+    networks:
+      - staydesk-network
+    restart: unless-stopped
+
+networks:
+  staydesk-network:
+    external: true 
