@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  backend-api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    container_name: staydesk-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./staydesk.db
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_RELOAD=true
+      - HOTEL_NAME=Staydesk Resort
+      - HOTEL_LOCATION=Miami Beach, FL
+      - NLP_SERVICE_URL=http://nlp-service:8001
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8001,http://localhost:8025
+      - LOG_LEVEL=INFO
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+    volumes:
+      - ./backend/api/database:/app/database
+      - ./backend/api/logs:/app/logs
+    networks:
+      - staydesk-network
+    depends_on:
+      - mailhog
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # NLP Service
+  nlp-service:
+    build:
+      context: ./backend/nlp
+      dockerfile: Dockerfile
+    container_name: staydesk-nlp
+    ports:
+      - "8001:8001"
+    environment:
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+      - VERTEX_AI_LOCATION=${VERTEX_AI_LOCATION:-us-central1}
+      - IMAP_SERVER=mailhog
+      - IMAP_PORT=1025
+      - IMAP_USERNAME=${IMAP_USERNAME}
+      - IMAP_PASSWORD=${IMAP_PASSWORD}
+      - IMAP_USE_TLS=false
+      - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD:-0.85}
+      - MAX_PROCESSING_TIME=${MAX_PROCESSING_TIME:-300}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
+      - BACKEND_API_BASE_URL=http://backend-api:8000/api
+      - API_TIMEOUT=${API_TIMEOUT:-30}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+    volumes:
+      - ./backend/nlp/credentials:/app/credentials:ro
+      - ./backend/nlp/logs:/app/logs
+    networks:
+      - staydesk-network
+    depends_on:
+      - backend-api
+      - mailhog
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MailHog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: staydesk-mailhog
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+    networks:
+      - staydesk-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8025"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Email Client for testing (optional)
+  email-client:
+    image: alpine:latest
+    container_name: staydesk-email-client
+    command: tail -f /dev/null
+    volumes:
+      - ./email-tests:/app/emails
+    networks:
+      - staydesk-network
+    depends_on:
+      - mailhog
+    profiles:
+      - testing
+
+networks:
+  staydesk-network:
+    driver: bridge 

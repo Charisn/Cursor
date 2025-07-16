@@ -1,6 +1,5 @@
 # Core NLP and AI dependencies
-google-cloud-aiplatform>=1.38.0
-google-cloud-core>=2.4.1
+google-generativeai>=0.3.0
 protobuf>=4.25.0
 
 # Email processing
@@ -12,6 +11,7 @@ html2text>=2020.1.16
 dateparser>=1.2.0
 regex>=2023.10.3
 pydantic>=2.5.0
+pydantic-settings>=2.1.0
 
 # Web framework and API
 fastapi>=0.104.0

@@ -2,7 +2,8 @@
 
 import time
 from contextlib import asynccontextmanager
-from typing import Dict, List
+from dataclasses import asdict
+from typing import Dict, List, Any, Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,41 +50,28 @@ app.add_middleware(
 )
 
 
-# Request/Response models
+# Request/Response models (Pydantic for FastAPI validation)
 class EmailProcessingRequest(BaseModel):
     subject: str
     body: str
     sender: str = "unknown@example.com"
 
 
-class ProcessingCycleResponse(BaseModel):
-    status: str
-    stats: Dict
-    results: List[NLPProcessingResult] = []
-    error: str = None
-
-
-class HealthResponse(BaseModel):
-    healthy: bool
-    timestamp: float
-    settings: Dict
-
-
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health")
 async def health_check():
     """Health check endpoint."""
     try:
         health_result = workflow.health_check()
-        return HealthResponse(**health_result)
+        return health_result
     except Exception as e:
-        return HealthResponse(
-            healthy=False,
-            timestamp=time.time(),
-            settings={},
-        )
+        return {
+            "healthy": False,
+            "timestamp": time.time(),
+            "settings": {},
+        }
 
 
-@app.post("/process-email", response_model=NLPProcessingResult)
+@app.post("/process-email")
 async def process_single_email(request: EmailProcessingRequest):
     """Process a single email and return NLP results."""
     try:
@@ -92,23 +80,28 @@ async def process_single_email(request: EmailProcessingRequest):
             body=request.body,
             sender=request.sender
         )
-        return result
+        # Convert dataclass to dict for JSON response
+        return asdict(result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 
-@app.post("/process-cycle", response_model=ProcessingCycleResponse)
+@app.post("/process-cycle")
 async def run_processing_cycle():
     """Run a complete email processing cycle."""
     try:
         cycle_result = workflow.run_email_processing_cycle()
-        return ProcessingCycleResponse(**cycle_result)
+        # Convert any dataclass objects to dicts
+        if "results" in cycle_result and cycle_result["results"]:
+            cycle_result["results"] = [asdict(r) if hasattr(r, '__dataclass_fields__') else r 
+                                     for r in cycle_result["results"]]
+        return cycle_result
     except Exception as e:
-        return ProcessingCycleResponse(
-            status="error",
-            stats={},
-            error=str(e)
-        )
+        return {
+            "status": "error",
+            "stats": {},
+            "error": str(e)
+        }
 
 
 @app.post("/process-cycle-background")

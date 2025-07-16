@@ -1,10 +1,9 @@
-"""Pydantic models for NLP data structures."""
+"""Data models for NLP data structures using dataclasses."""
 
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
-
-from pydantic import BaseModel, Field, validator
 
 
 class IntentType(str, Enum):
@@ -24,91 +23,74 @@ class NextAction(str, Enum):
     IGNORE_EMAIL = "ignore_email"
 
 
-class RoomRequest(BaseModel):
+@dataclass
+class RoomRequest:
     """Parameters extracted from room availability requests."""
     
-    date: Optional[date] = Field(None, description="Requested check-in date")
-    room_count: Optional[int] = Field(None, ge=1, le=10, description="Number of rooms")
-    budget: Optional[float] = Field(None, gt=0, description="Budget per room per night")
-    view_preference: Optional[str] = Field(None, description="Preferred view type")
-    special_requests: Optional[str] = Field(None, description="Special requests or notes")
-    
-    @validator('date')
-    def validate_date_not_past(cls, v):
-        """Ensure date is not in the past."""
-        if v and v < date.today():
-            raise ValueError("Date cannot be in the past")
-        return v
+    date: Optional[date] = None
+    room_count: Optional[int] = None
+    budget: Optional[float] = None
+    view_preference: Optional[str] = None
+    special_requests: Optional[str] = None
 
 
-class EmailMessage(BaseModel):
+@dataclass
+class EmailMessage:
     """Parsed email message structure."""
     
-    subject: str = Field(..., description="Email subject line")
-    body: str = Field(..., description="Cleaned email body text")
-    sender: str = Field(..., description="Sender email address")
-    received_at: datetime = Field(..., description="When email was received")
-    message_id: str = Field(..., description="Unique message identifier")
-    
-    @validator('body')
-    def validate_body_not_empty(cls, v):
-        """Ensure email body is not empty after cleaning."""
-        if not v.strip():
-            raise ValueError("Email body cannot be empty")
-        return v.strip()
+    subject: str
+    body: str
+    sender: str
+    received_at: datetime
+    message_id: str
 
 
-class IntentClassificationResult(BaseModel):
+@dataclass
+class IntentClassificationResult:
     """Result of intent classification."""
     
-    intent: IntentType = Field(..., description="Classified intent type")
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Classification confidence")
-    reasoning: Optional[str] = Field(None, description="Explanation of classification")
+    intent: str
+    confidence: float
+    reasoning: Optional[str] = None
 
 
-class ParameterExtractionResult(BaseModel):
+@dataclass
+class ParameterExtractionResult:
     """Result of parameter extraction from email."""
     
-    params: RoomRequest = Field(..., description="Extracted parameters")
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Extraction confidence")
-    missing_fields: List[str] = Field(default_factory=list, description="Required fields that are missing")
+    params: RoomRequest
+    confidence: float
+    missing_fields: List[str] = field(default_factory=list)
 
 
-class NLPProcessingResult(BaseModel):
+@dataclass
+class NLPProcessingResult:
     """Complete result of NLP processing pipeline."""
     
-    intent: IntentType = Field(..., description="Classified intent")
-    params: Optional[RoomRequest] = Field(None, description="Extracted parameters if available")
-    confidence: float = Field(..., ge=0.0, le=1.0, description="Overall confidence score")
-    next_action: NextAction = Field(..., description="Recommended next action")
-    clarification_needed: bool = Field(False, description="Whether clarification is needed")
-    clarification_questions: List[str] = Field(default_factory=list, description="Questions to ask for clarification")
-    processing_time_ms: float = Field(..., gt=0, description="Processing time in milliseconds")
-    
-    class Config:
-        """Pydantic configuration."""
-        use_enum_values = True
+    intent: str
+    confidence: float
+    next_action: str
+    processing_time_ms: float
+    params: Optional[RoomRequest] = None
+    clarification_needed: bool = False
+    clarification_questions: List[str] = field(default_factory=list)
 
 
-class APIAvailabilityRequest(BaseModel):
+@dataclass
+class APIAvailabilityRequest:
     """Request format for backend availability API."""
     
-    check_in_date: date = Field(..., description="Check-in date")
-    room_count: int = Field(1, ge=1, le=10, description="Number of rooms needed")
-    max_budget: Optional[float] = Field(None, gt=0, description="Maximum budget per room")
-    view_preference: Optional[str] = Field(None, description="Preferred view type")
-    
-    class Config:
-        """Pydantic configuration."""
-        json_encoders = {
-            date: lambda v: v.isoformat()
-        }
+    check_in_date: date
+    room_count: int = 1
+    max_budget: Optional[float] = None
+    view_preference: Optional[str] = None
 
 
-class APIAvailabilityResponse(BaseModel):
+@dataclass
+class APIAvailabilityResponse:
     """Response format from backend availability API."""
     
-    available_rooms: List[Dict[str, Any]] = Field(default_factory=list, description="Available rooms")
-    total_count: int = Field(0, ge=0, description="Total number of available rooms")
-    suggested_alternatives: List[Dict[str, Any]] = Field(default_factory=list, description="Alternative suggestions")
-    message: Optional[str] = Field(None, description="Additional message from API") 
+    available_rooms: List[Dict[str, Any]] = field(default_factory=list)
+    total_count: int = 0
+    suggested_alternatives: List[Dict[str, Any]] = field(default_factory=list)
+    message: Optional[str] = None 

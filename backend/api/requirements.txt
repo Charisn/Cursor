@@ -1,0 +1,43 @@
+# Web framework and API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Database
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+psycopg2-binary>=2.9.0  # PostgreSQL adapter
+# sqlite3 is built into Python
+
+# Data validation and serialization
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Date and time handling
+python-dateutil>=2.8.2
+
+# HTTP client for NLP integration
+httpx>=0.25.0
+aiohttp>=3.9.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+httpx>=0.25.0  # For test client
+
+# Development tools
+black>=23.0.0
+isort>=5.12.0
+mypy>=1.6.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Logging and monitoring
+structlog>=23.2.0
+
+# CORS and security
+python-multipart>=0.0.6
+
+# Fake data generation for testing
+faker>=20.1.0 

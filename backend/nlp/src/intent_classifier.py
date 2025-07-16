@@ -4,8 +4,7 @@ import json
 import re
 from typing import Optional
 
-import vertexai
-from vertexai.generative_models import GenerativeModel, Part
+import google.generativeai as genai
 
 from .config import get_settings
 from .models import EmailMessage, IntentClassificationResult, IntentType
@@ -18,14 +17,12 @@ class IntentClassifier:
         """Initialize intent classifier."""
         self.settings = get_settings()
         
-        # Initialize Vertex AI
-        vertexai.init(
-            project=self.settings.google_cloud_project,
-            location=self.settings.vertex_ai_location
-        )
-        
-        # Initialize Gemini model
-        self.model = GenerativeModel(self.settings.gemini_model)
+        # Initialize Gemini with API key
+        if self.settings.google_api_key:
+            genai.configure(api_key=self.settings.google_api_key)
+            self.model = genai.GenerativeModel('gemini-pro')
+        else:
+            raise ValueError("Google API key is required for NLP service")
         
         # Classification prompt template
         self.classification_prompt = """
@@ -77,10 +74,10 @@ Confidence should be high (>0.8) only when you're very certain.
             # Generate response
             response = self.model.generate_content(
                 prompt,
-                generation_config={
-                    "temperature": 0.1,  # Low temperature for consistent results
-                    "max_output_tokens": 256,
-                }
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.1,  # Low temperature for consistent results
+                    max_output_tokens=256,
+                )
             )
             
             # Parse the response

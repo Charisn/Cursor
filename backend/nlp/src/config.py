@@ -3,15 +3,17 @@
 import os
 from typing import Optional
 
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Google Cloud Configuration
-    google_cloud_project: str = Field(..., env="GOOGLE_CLOUD_PROJECT")
-    google_application_credentials: str = Field(..., env="GOOGLE_APPLICATION_CREDENTIALS")
+    google_cloud_project: str = Field("staydesk-nlp", env="GOOGLE_CLOUD_PROJECT")
+    google_application_credentials: str = Field("", env="GOOGLE_APPLICATION_CREDENTIALS")
+    google_api_key: str = Field("", env="GOOGLE_API_KEY")
     vertex_ai_location: str = Field("us-central1", env="VERTEX_AI_LOCATION")
     
     # Email Configuration

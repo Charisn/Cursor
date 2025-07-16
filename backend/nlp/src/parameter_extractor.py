@@ -6,8 +6,7 @@ from datetime import date, datetime, timedelta
 from typing import List, Optional, Tuple
 
 import dateparser
-import vertexai
-from vertexai.generative_models import GenerativeModel
+import google.generativeai as genai
 
 from .config import get_settings
 from .models import EmailMessage, ParameterExtractionResult, RoomRequest
@@ -20,14 +19,12 @@ class ParameterExtractor:
         """Initialize parameter extractor."""
         self.settings = get_settings()
         
-        # Initialize Vertex AI
-        vertexai.init(
-            project=self.settings.google_cloud_project,
-            location=self.settings.vertex_ai_location
-        )
-        
-        # Initialize Gemini model
-        self.model = GenerativeModel(self.settings.gemini_model)
+        # Initialize Gemini with API key
+        if self.settings.google_api_key:
+            genai.configure(api_key=self.settings.google_api_key)
+            self.model = genai.GenerativeModel('gemini-pro')
+        else:
+            raise ValueError("Google API key is required for NLP service")
         
         # Parameter extraction prompt
         self.extraction_prompt = """
@@ -149,10 +146,10 @@ Respond with JSON:
             
             response = self.model.generate_content(
                 prompt,
-                generation_config={
-                    "temperature": 0.1,
-                    "max_output_tokens": 512,
-                }
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.1,
+                    max_output_tokens=512,
+                )
             )
             
             # Parse response
