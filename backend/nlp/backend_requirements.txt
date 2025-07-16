@@ -1,0 +1,96 @@
+NLP Service Backend Requirements
+=====================================
+
+The NLP service processes unstructured email content and needs the following from the backend:
+
+REQUIRED API ENDPOINTS:
+-----------------------
+
+1. POST /api/rooms/availability
+   Purpose: Check room availability based on extracted parameters
+   Expected Request Body:
+   {
+     "check_in_date": "YYYY-MM-DD",
+     "check_out_date": "YYYY-MM-DD", 
+     "guests": integer,
+     "room_type": string (optional),
+     "budget_min": float (optional),
+     "budget_max": float (optional),
+     "special_requirements": array of strings (optional)
+   }
+   
+   Expected Response:
+   {
+     "available": boolean,
+     "rooms": [
+       {
+         "id": string,
+         "name": string,
+         "type": string,
+         "price_per_night": float,
+         "capacity": integer,
+         "amenities": array of strings,
+         "description": string
+       }
+     ],
+     "total_cost": float,
+     "currency": string
+   }
+
+2. POST /api/rooms/search
+   Purpose: Search for best matching rooms when exact availability check fails
+   Expected Request Body:
+   {
+     "preferred_dates": ["YYYY-MM-DD", "YYYY-MM-DD"],
+     "flexible_dates": boolean,
+     "guests": integer,
+     "budget_range": {"min": float, "max": float},
+     "preferences": array of strings
+   }
+   
+   Expected Response:
+   {
+     "suggestions": [
+       {
+         "room": room_object,
+         "available_dates": array of date ranges,
+         "match_score": float
+       }
+     ],
+     "alternative_dates": array of date ranges
+   }
+
+DATA VALIDATION:
+----------------
+- All dates must be in ISO format (YYYY-MM-DD)
+- Check-in date must be >= today
+- Check-out date must be > check-in date
+- Guests must be positive integer
+- Budget values must be positive numbers
+
+ERROR RESPONSES:
+----------------
+The backend should return standardized error responses:
+{
+  "error": true,
+  "error_code": string,
+  "message": string,
+  "details": object (optional)
+}
+
+Error codes expected:
+- "INVALID_DATES"
+- "NO_AVAILABILITY" 
+- "INVALID_PARAMETERS"
+- "SERVER_ERROR"
+
+PERFORMANCE REQUIREMENTS:
+-------------------------
+- API responses should be < 2 seconds
+- Support concurrent requests from multiple NLP instances
+- Implement proper rate limiting
+
+AUTHENTICATION:
+---------------
+NLP service will authenticate using API key in header:
+Authorization: Bearer {api_key}

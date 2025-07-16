@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  nlp-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nlp-service
+    ports:
+      - "8001:8001"
+    environment:
+      - NLP_DEBUG=false
+      - NLP_LOG_LEVEL=INFO
+      - NLP_BACKEND_API_URL=http://backend:8000
+      - NLP_REDIS_URL=redis://redis:6379
+      - NLP_OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - NLP_API_KEY=${API_KEY:-secret-key}
+    depends_on:
+      - redis
+    networks:
+      - nlp-network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: nlp-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - nlp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  nlp-network:
+    driver: bridge
+    external: false
