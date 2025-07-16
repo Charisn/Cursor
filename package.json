@@ -1,0 +1,31 @@
+{
+  "name": "staydesk",
+  "version": "1.0.0",
+  "description": "AI-powered hotel email management system",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start",
+    "lint": "cd frontend && npm run lint",
+    "install-deps": "cd frontend && npm install"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/staydesk.git"
+  },
+  "keywords": [
+    "ai",
+    "hotel",
+    "email",
+    "automation",
+    "booking",
+    "nextjs",
+    "typescript"
+  ],
+  "author": "StayDesk Team",
+  "license": "MIT"
+} 
